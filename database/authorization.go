@@ -29,6 +29,7 @@ func newAuth() authHandler {
 	// Map to store token information
 	a.tokenStore = make(map[string]TokenInfo) // map token to TokenInfo struct (username + time)
 	slog.Info("auth created")
+	slog.Info("secondetest")
 	return authHandler{}
 }
 
@@ -50,12 +51,14 @@ type TokenInfo struct {
 
 // HTTP handler function for authentication
 func (auth authHandler) authFunction(w http.ResponseWriter, r *http.Request) {
-	slog.Info("Hey, we made it this far...")
+	slog.Info("Hey, we made it this far..." + r.Method)
+
 	switch r.Method {
 	case http.MethodOptions:
 		// For the /auth endpoint, indicate that POST and DELETE are allowed.
 		w.Header().Set("Allow", "POST, DELETE")
 		w.WriteHeader(http.StatusOK)
+		return
 
 	case http.MethodPost: // Handle POST method for user authentication
 		slog.Info("Making it further...")
@@ -93,6 +96,7 @@ func (auth authHandler) authFunction(w http.ResponseWriter, r *http.Request) {
 		// Respond with the generated token
 		response := marshalToken(token)
 		w.Write(response)
+		return
 
 	case http.MethodDelete: // Handle DELETE method for user de-authentication
 		token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
@@ -115,9 +119,11 @@ func (auth authHandler) authFunction(w http.ResponseWriter, r *http.Request) {
 		delete(auth.tokenStore, token) // Delete token if all checks pass
 
 		w.Write([]byte("Logged out")) // Send logout confirmation
+		return
 
 	default: // Handle unsupported HTTP methods
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
 }
 
