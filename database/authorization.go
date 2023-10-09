@@ -29,7 +29,6 @@ func newAuth() authHandler {
 	// Map to store token information
 	a.tokenStore = make(map[string]TokenInfo) // map token to TokenInfo struct (username + time)
 	slog.Info("auth created")
-	slog.Info("secondetest")
 	return authHandler{}
 }
 
@@ -52,75 +51,20 @@ type TokenInfo struct {
 // HTTP handler function for authentication
 func (auth authHandler) authFunction(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Hey, we made it this far..." + r.Method)
-
 	switch r.Method {
 	case http.MethodOptions:
+		slog.Info("auth requests options")
 		// For the /auth endpoint, indicate that POST and DELETE are allowed.
-		w.Header().Set("Allow", "POST, DELETE")
-		w.WriteHeader(http.StatusOK)
-		return
-
+		auth.authPost(w, r)
+		slog.Info("auth requests options")
 	case http.MethodPost: // Handle POST method for user authentication
-		slog.Info("Making it further...")
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		slog.Info("Header Set")
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		slog.Info("body set" + fmt.Sprint(body))
-
-		var username string
-
-		err2 := json.Unmarshal(body, &username)
-		if err2 != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
-
-		slog.Info("Marshaling successful")
-
-		// Get username from the query parameter
-		if username == "" {
-			http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
-			return
-		}
-
-		slog.Info("username successful" + username)
-
-		// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
-		token := auth.makeToken()                                                   // Generate a new token
-		auth.tokenStore[token] = TokenInfo{Username: username, Created: time.Now()} // Store the token and other info
-
-		// Respond with the generated token
-		response := marshalToken(token)
-		w.Write(response)
-		return
-
+		slog.Info("auth requests post")
+		auth.authPost(w, r)
+		slog.Info("auth finished post")
 	case http.MethodDelete: // Handle DELETE method for user de-authentication
-		token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
-		// Get token from the Authorization header
-		if token == "" {
-			http.Error(w, "Token is required", http.StatusBadRequest) // Return error if token is missing
-			return
-		}
-		if info, exists := auth.tokenStore[token]; exists { // Check if token exists
-			if time.Since(info.Created).Hours() >= 1 { // Check token expiration
-				delete(auth.tokenStore, token)                          // Remove expired token
-				http.Error(w, "Token expired", http.StatusUnauthorized) // Return an expiration error
-
-				return
-			}
-		} else {
-			http.Error(w, "Invalid token", http.StatusUnauthorized) // Return an error for invalid token
-			return
-		}
-		delete(auth.tokenStore, token) // Delete token if all checks pass
-
-		w.Write([]byte("Logged out")) // Send logout confirmation
-		return
-
+		slog.Info("auth requests delete")
+		auth.authDelete(w, r)
+		slog.Info("auth finished delete")
 	default: // Handle unsupported HTTP methods
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -136,6 +80,74 @@ func marshalToken(token string) []byte {
 		return nil
 	}
 	return response
+}
+
+func (auth authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Allow", "POST,DELETE")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	slog.Info("Making it further...")
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	slog.Info("body set" + fmt.Sprint(body))
+
+	var username string
+
+	err2 := json.Unmarshal(body, &username)
+	if err2 != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	slog.Info("Marshaling successful")
+
+	// Get username from the query parameter
+	if username == "" {
+		http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
+		return
+	}
+
+	slog.Info("username successful" + username)
+
+	// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
+	token := auth.makeToken()                                                   // Generate a new token
+	auth.tokenStore[token] = TokenInfo{Username: username, Created: time.Now()} // Store the token and other info
+
+	// Respond with the generated token
+	response := marshalToken(token)
+	w.Write(response)
+}
+
+func (auth authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
+	// Get token from the Authorization header
+	if token == "" {
+		http.Error(w, "Token is required", http.StatusBadRequest) // Return error if token is missing
+		return
+	}
+	if info, exists := auth.tokenStore[token]; exists { // Check if token exists
+		if time.Since(info.Created).Hours() >= 1 { // Check token expiration
+			delete(auth.tokenStore, token)                          // Remove expired token
+			http.Error(w, "Token expired", http.StatusUnauthorized) // Return an expiration error
+
+			return
+		}
+	} else {
+		http.Error(w, "Invalid token", http.StatusUnauthorized) // Return an error for invalid token
+		return
+	}
+	delete(auth.tokenStore, token) // Delete token if all checks pass
+
+	w.Write([]byte("Logged out")) // Send logout confirmation
+	return
 }
 
 // need this case in NewHandler() in main.go
