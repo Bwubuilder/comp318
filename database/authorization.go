@@ -4,6 +4,7 @@ package database
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -57,13 +58,16 @@ func (auth authHandler) authFunction(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 
 	case http.MethodPost: // Handle POST method for user authentication
+		slog.Info("Making it further...")
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+		slog.Info("Header Set")
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		slog.Info("body set" + fmt.Sprint(body))
 
 		var username string
 
@@ -72,11 +76,15 @@ func (auth authHandler) authFunction(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 
+		slog.Info("Marshaling successful")
+
 		// Get username from the query parameter
 		if username == "" {
 			http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
 			return
 		}
+
+		slog.Info("username successful" + username)
 
 		// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
 		token := auth.makeToken()                                                   // Generate a new token
