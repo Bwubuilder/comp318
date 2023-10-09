@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Bwubuilder/comp318/owldb/skiplist"
+	"github.com/Bwubuilder/owldb/skiplist"
 )
 
 // The DatabaseService struct represents the root of the database.

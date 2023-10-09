@@ -1,4 +1,4 @@
-module github.com/Bwubuilder/comp318/owldb
+module github.com/Bwubuilder/owldb
 
 go 1.21.0
 

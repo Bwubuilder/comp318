@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Bwubuilder/comp318/owldb/skiplist"
+	"github.com/Bwubuilder/owldb/skiplist"
 )
 
 // The Document struct represents a document in a database.
