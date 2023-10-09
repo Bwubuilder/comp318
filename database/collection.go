@@ -1,6 +1,6 @@
 package database
 
-import "github.com/Bwubuilder/comp318/owldb/skiplist"
+import "github.com/Bwubuilder/owldb/skiplist"
 
 // The Collection struct represents a collection in a database.
 type Collection struct {
