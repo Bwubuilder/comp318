@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func setMux() *http.ServeMux {
+func SetMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	auth := newAuth()
 	db := newDatabase()

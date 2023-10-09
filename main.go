@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/Bwubuilder/owldb/database"
 )
 
 func main() {
@@ -35,7 +37,7 @@ func main() {
 	server.Addr = ":" + fmt.Sprintf("%d", port)
 
 	// Assign the handler to the server
-	server.Handler = database.setMux()
+	server.Handler = database.SetMux()
 
 	// The following code should go last and remain unchanged.
 	// Note that you must actually initialize 'server' and 'port'
