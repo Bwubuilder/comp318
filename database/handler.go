@@ -10,7 +10,8 @@ import (
 func SetMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	db := newDatabase()
-	mux.Handle("/auth", authorization.NewAuth())
+	auth := authorization.NewAuth()
+	mux.HandleFunc("/auth", auth.HandleAuthFunctions)
 	mux.HandleFunc("/", db.dbMethods)
 
 	slog.Info("Created MainHandler")

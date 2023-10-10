@@ -56,7 +56,7 @@ func newTokenInfo() TokenInfo {
 }
 
 // HTTP handler function for authentication
-func (auth *authHandler) handleAuthFunctions(w http.ResponseWriter, r *http.Request) {
+func (auth *authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Hey, we made it this far..." + r.Method)
 	switch r.Method {
 	case http.MethodOptions:
