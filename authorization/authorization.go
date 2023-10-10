@@ -21,7 +21,7 @@ type authHandler struct {
 	tokenStore map[string]TokenInfo
 }
 
-func newAuth() authHandler {
+func NewAuth() authHandler {
 	var a authHandler
 	// Define constants for token length and character set
 	a.strlen = 15
@@ -46,6 +46,12 @@ func (auth authHandler) makeToken() string {
 type TokenInfo struct {
 	Username string
 	Created  time.Time
+}
+
+func newTokenInfo() TokenInfo {
+	var info TokenInfo
+	info.Created = time.Now()
+	return info
 }
 
 // HTTP handler function for authentication
@@ -91,7 +97,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("body set" + fmt.Sprint(body))
 
-	var thisToken TokenInfo
+	thisToken := newTokenInfo()
 	err2 := json.Unmarshal(body, &thisToken)
 	if err2 != nil {
 		slog.Info("unmarshal failed")
