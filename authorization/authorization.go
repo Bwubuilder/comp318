@@ -54,7 +54,9 @@ func newTokenInfo() TokenInfo {
 
 // HTTP handler function for authentication
 func (auth *authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Request) {
-	slog.Info("Hey, we made it this far..." + r.Method)
+	slog.Info("Auth Method Called" + r.Method)
+	slog.Info("Path" + r.URL.Path)
+	logHeader(r)
 	switch r.Method {
 	case http.MethodOptions:
 		slog.Info("auth requests options")
@@ -83,6 +85,7 @@ func (auth *authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE")
 	w.WriteHeader(http.StatusOK)
 	slog.Info("Auth options header written")
+	w.Write([]byte("Options: Post, Delete"))
 }
 
 type userStore struct {
@@ -179,6 +182,12 @@ func marshalToken(token string) []byte {
 		return nil
 	}
 	return response
+}
+
+func logHeader(r *http.Request) {
+	for key, element := range r.Header {
+		slog.Info("Header:", key, "Value", element)
+	}
 }
 
 // need this case in NewHandler() in main.go
