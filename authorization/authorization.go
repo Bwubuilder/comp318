@@ -4,7 +4,6 @@ package authorization
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -17,7 +16,7 @@ import (
 var seed = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type authHandler struct {
-	mu         sync.Mutex
+	mu         *sync.Mutex
 	strlen     int
 	charset    string
 	tokenStore map[string]TokenInfo
@@ -31,7 +30,7 @@ func NewAuth() authHandler {
 	// Map to store token information
 	a.tokenStore = make(map[string]TokenInfo) // map token to TokenInfo struct (username + time)
 	slog.Info("auth created")
-	return authHandler{}
+	return a
 }
 
 // Function to generate a random token
@@ -57,7 +56,7 @@ func newTokenInfo() TokenInfo {
 }
 
 // HTTP handler function for authentication
-func (auth *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (auth *authHandler) handleAuthFunctions(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Hey, we made it this far..." + r.Method)
 	switch r.Method {
 	case http.MethodOptions:
@@ -92,8 +91,20 @@ func (auth *authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Auth options header written")
 }
 
+type userStore struct {
+	username string
+}
+
 func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	//Detect if content-type is application/json
+	if r.Header.Get("Content-Type") != "" {
+		content := r.Header.Get("Content-Type")
+		if content != "application/json" {
+			http.Error(w, "Content header not JSON", http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
 	slog.Info("Making it further...")
 	auth.mu.Lock()
 	defer auth.mu.Unlock()
@@ -109,31 +120,32 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("body set" + fmt.Sprint(len(body)))
-
-	thisToken := newTokenInfo()
-	err2 := json.Unmarshal([]byte(body), &thisToken)
+	var store userStore
+	err2 := json.NewDecoder(r.Body).Decode(&store)
 	if err2 != nil {
-		slog.Info("unmarshal failed")
+		slog.Info("decode failed")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Get username from the query parameter
-	if thisToken.Username == "" {
+	if store.username == "" {
 		http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
 		return
 	}
 
-	slog.Info("username successful" + thisToken.Username)
+	slog.Info("username successful" + store.username)
 
 	// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
 	token := auth.makeToken() // Generate a new token
-	thisToken.Created = time.Now()
+
+	thisToken := newTokenInfo()
 	auth.tokenStore[token] = thisToken // Store the token and other info
 
 	// Respond with the generated token
 	response := marshalToken(token)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }
 
@@ -164,6 +176,7 @@ func (auth *authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func marshalToken(token string) []byte {
+	slog.Info("We made it this far!")
 	tokenVal := map[string]string{"token": token}
 
 	response, err := json.MarshalIndent(tokenVal, "", "  ")
