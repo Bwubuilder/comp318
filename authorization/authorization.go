@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Bwubuilder/owldb/jsonvisitor/jsontogo"
 	"github.com/Bwubuilder/owldb/jsonvisitor/jsonvisit"
 )
 
@@ -128,7 +127,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Unmarshaled successfully")
 
-	converter := jsontogo.New()
+	converter := New()
 	user, err4 := jsonvisit.Accept(d, converter)
 	if err4 != nil {
 		slog.Info("JSONToGo Failed")
@@ -136,8 +135,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("JSONToGo Succeeded", user)
-	userBody := user.(map[string]string)
-	if userBody["username"] == "" {
+	if user == "" {
 		slog.Info("No username")
 		http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
 		return
@@ -149,11 +147,12 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	token := auth.makeToken() // Generate a new token
 
 	thisToken := newTokenInfo()
-	thisToken.Username = userBody["username"]
+	thisToken.Username = user
 	auth.tokenStore[token] = thisToken // Store the token and other info
 	// Respond with the generated token
 	response := marshalToken(token)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Authorization", "Bearer "+token)
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }
