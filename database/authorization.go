@@ -4,6 +4,7 @@ package database
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -88,16 +89,15 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("body set")
+	slog.Info("body set" + fmt.Sprint(body))
 
 	var thisToken TokenInfo
 	err2 := json.Unmarshal(body, &thisToken)
 	if err2 != nil {
 		slog.Info("unmarshal failed")
-		http.Error(w, `"marshaling unsuccessful"`, http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-
-	slog.Info("Marshaling successful" + thisToken.Username)
 
 	// Get username from the query parameter
 	if thisToken.Username == "" {
