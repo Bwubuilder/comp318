@@ -4,7 +4,6 @@ package database
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -44,7 +43,7 @@ func (auth authHandler) makeToken() string {
 
 // Struct to hold token information
 type TokenInfo struct {
-	Username string `json:"name"`
+	Username string
 	Created  time.Time
 }
 
@@ -71,17 +70,6 @@ func (auth authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func marshalToken(token string) []byte {
-	tokenVal := map[string]string{"token": token}
-
-	response, err := json.MarshalIndent(tokenVal, "", "  ")
-	if err != nil {
-		slog.Info("Token marshaling failed")
-		return nil
-	}
-	return response
-}
-
 func (auth authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Allow", "POST,DELETE")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -94,21 +82,22 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Making it further...")
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, `"invalid user format"`, http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
-	slog.Info("body set" + fmt.Sprint(body))
+
+	slog.Info("body set")
 
 	var thisToken TokenInfo
 	err2 := json.Unmarshal(body, &thisToken)
 	if err2 != nil {
 		slog.Info("unmarshal failed")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, `"marshaling unsuccessful"`, http.StatusBadRequest)
 	}
 
-	slog.Info("Marshaling successful")
+	slog.Info("Marshaling successful" + thisToken.Username)
 
 	// Get username from the query parameter
 	if thisToken.Username == "" {
@@ -150,6 +139,17 @@ func (auth authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte("Logged out")) // Send logout confirmation
 	return
+}
+
+func marshalToken(token string) []byte {
+	tokenVal := map[string]string{"token": token}
+
+	response, err := json.MarshalIndent(tokenVal, "", "  ")
+	if err != nil {
+		slog.Info("Token marshaling failed")
+		return nil
+	}
+	return response
 }
 
 // need this case in NewHandler() in main.go
