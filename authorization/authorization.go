@@ -52,8 +52,8 @@ func newTokenInfo() TokenInfo {
 
 // HTTP handler function for authentication
 func (auth authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Request) {
-	slog.Info("Auth Method Called" + r.Method)
-	slog.Info("Path" + r.URL.Path)
+	slog.Info("Auth Method Called ", r.Method)
+	slog.Info("Path ", r.URL.Path)
 	logHeader(r)
 
 	switch r.Method {
@@ -104,7 +104,6 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Making it further...")
 
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 	if err != nil {
 		slog.Info("Body could not be read")
 		http.Error(w, `"invalid user format"`, http.StatusBadRequest)
@@ -118,6 +117,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("read body", len(body))
+	r.Body.Close()
 
 	var store userStore
 	err2 := json.Unmarshal(body, &store)
@@ -126,6 +126,8 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	slog.Info("User passed", store.username)
 
 	// Get username from the query parameter
 	if store.username == "" {
