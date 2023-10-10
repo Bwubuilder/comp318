@@ -2,6 +2,7 @@ package jsontogo
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/Bwubuilder/owldb/jsonvisitor/jsonvisit"
 )
@@ -22,6 +23,7 @@ func (v jsonVisitor) Map(m map[string]any) (any, error) {
 		if err != nil {
 			return "", err
 		}
+		slog.Info("Created Key: ", key, "Created Value: ", res)
 		returnMap[key] = res
 	}
 	return returnMap, nil
@@ -35,6 +37,7 @@ func (v jsonVisitor) Slice(s []any) (any, error) {
 		if err != nil {
 			return "", err
 		}
+		slog.Info("Created: ", res, "at index: ", i)
 		returnSlice[i] = res
 	}
 	return returnSlice, nil
@@ -61,5 +64,6 @@ func (v jsonVisitor) String(s string) (any, error) {
 
 // Process JSON null value
 func (v jsonVisitor) Null() (any, error) {
+	slog.Info("Call to null")
 	return nil, nil
 }
