@@ -1,6 +1,6 @@
 // Or should userList map username to UserStruct then store all the user + token info in UserStruct?
 
-package database
+package authorization
 
 import (
 	"encoding/json"
