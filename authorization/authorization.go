@@ -117,8 +117,10 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Info("read body", len(body))
+
 	var store userStore
-	err2 := json.NewDecoder(r.Body).Decode(&store)
+	err2 := json.Unmarshal(body, &store)
 	if err2 != nil {
 		slog.Info("decode failed")
 		http.Error(w, err.Error(), http.StatusBadRequest)
