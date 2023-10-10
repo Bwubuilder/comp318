@@ -9,6 +9,9 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/Bwubuilder/owldb/jsonvisitor/jsonstringer"
+	"github.com/Bwubuilder/owldb/jsonvisitor/jsonvisit"
 )
 
 // Initialize a random number generator with a time-based seed
@@ -84,10 +87,6 @@ func (auth authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-type userStore struct {
-	username string
-}
-
 func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	//Detect if content-type is application/json
 	if r.Header.Get("Content-Type") != "" {
@@ -119,29 +118,39 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	slog.Info("read body", len(body))
 	r.Body.Close()
 
-	var store userStore
-	err2 := json.Unmarshal(body, &store)
+	var d any
+	err2 := json.Unmarshal(body, &d)
 	if err2 != nil {
 		slog.Info("decode failed")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	slog.Info("User passed", store.username)
+	slog.Info("Unmarshaled successfully")
+
+	printer := jsonstringer.New()
+	user, err3 := jsonvisit.Accept(d, printer)
+	if err3 != nil {
+		slog.Info("JSONVisitor Failed")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	slog.Info("JSONVisit Succeeded", user)
 
 	// Get username from the query parameter
-	if store.username == "" {
+	if user == "" {
 		slog.Info("No username")
 		http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
 		return
 	}
 
-	slog.Info("username successful" + store.username)
+	slog.Info("username successful" + user)
 
 	// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
 	token := auth.makeToken() // Generate a new token
 
 	thisToken := newTokenInfo()
+	thisToken.Username = "StoredUser"
 	auth.tokenStore[token] = thisToken // Store the token and other info
 
 	// Respond with the generated token

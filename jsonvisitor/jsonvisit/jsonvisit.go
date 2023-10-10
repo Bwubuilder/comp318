@@ -2,7 +2,7 @@
 // values.  Encoded JSON data should be unmarshaled into a variable of type
 // "any".  Such variables should then only be accessed using visitors with
 // Accept or compared using Equal.
-package jsonvisit
+package jsonvisitor
 
 import (
 	"fmt"
