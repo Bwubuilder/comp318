@@ -54,13 +54,13 @@ func newTokenInfo() TokenInfo {
 
 // HTTP handler function for authentication
 func (auth *authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		auth.authOptions(w, r)
-	}
 	slog.Info("Auth Method Called" + r.Method)
 	slog.Info("Path" + r.URL.Path)
 	logHeader(r)
-	switch r.Method {
+	if r.Method == http.MethodOptions {
+		auth.authOptions(w, r)
+	}
+	switch r.Header.Get("Access-Control-Request-Method-Value") {
 	case http.MethodPost: // Handle POST method for user authentication
 		slog.Info("auth requests post")
 		auth.authPost(w, r)
@@ -106,11 +106,13 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
+		slog.Info("Body could not be read")
 		http.Error(w, `"invalid user format"`, http.StatusBadRequest)
 		return
 	}
 
 	if len(body) == 0 {
+		slog.Info("Body empty")
 		http.Error(w, "Body of Request is empty", http.StatusBadRequest)
 		return
 	}
@@ -125,6 +127,7 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 
 	// Get username from the query parameter
 	if store.username == "" {
+		slog.Info("No username")
 		http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
 		return
 	}
@@ -140,7 +143,6 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	// Respond with the generated token
 	response := marshalToken(token)
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }
 
