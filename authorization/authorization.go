@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ import (
 var seed = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type authHandler struct {
+	mu         sync.Mutex
 	strlen     int
 	charset    string
 	tokenStore map[string]TokenInfo
@@ -33,7 +35,7 @@ func NewAuth() authHandler {
 }
 
 // Function to generate a random token
-func (auth authHandler) makeToken() string {
+func (auth *authHandler) makeToken() string {
 	token := make([]byte, auth.strlen) // Initialize a byte array to hold the token
 	for i := range token {
 		token[i] = auth.charset[seed.Intn(len(auth.charset))] // Populate token with random characters from charset
@@ -55,7 +57,7 @@ func newTokenInfo() TokenInfo {
 }
 
 // HTTP handler function for authentication
-func (auth authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (auth *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Hey, we made it this far..." + r.Method)
 	switch r.Method {
 	case http.MethodOptions:
@@ -63,21 +65,26 @@ func (auth authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// For the /auth endpoint, indicate that POST and DELETE are allowed.
 		auth.authPost(w, r)
 		slog.Info("auth finished options")
+		return
 	case http.MethodPost: // Handle POST method for user authentication
 		slog.Info("auth requests post")
 		auth.authPost(w, r)
 		slog.Info("auth finished post")
+		return
 	case http.MethodDelete: // Handle DELETE method for user de-authentication
 		slog.Info("auth requests delete")
 		auth.authDelete(w, r)
 		slog.Info("auth finished delete")
+		return
 	default: // Handle unsupported HTTP methods
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 }
 
-func (auth authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
+func (auth *authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
+	auth.mu.Lock()
+	defer auth.mu.Unlock()
 	w.Header().Set("Allow", "POST,DELETE")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE")
@@ -85,14 +92,20 @@ func (auth authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Auth options header written")
 }
 
-func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
+func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	slog.Info("Making it further...")
-
+	auth.mu.Lock()
+	defer auth.mu.Unlock()
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		http.Error(w, `"invalid user format"`, http.StatusBadRequest)
+		return
+	}
+
+	if len(body) == 0 {
+		http.Error(w, "Body of Request is empty", http.StatusBadRequest)
 		return
 	}
 
@@ -124,7 +137,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (auth authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
+func (auth *authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
 	// Get token from the Authorization header
 	if token == "" {
@@ -142,6 +155,8 @@ func (auth authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid token", http.StatusUnauthorized) // Return an error for invalid token
 		return
 	}
+	auth.mu.Lock()
+	defer auth.mu.Unlock()
 	delete(auth.tokenStore, token) // Delete token if all checks pass
 
 	w.Write([]byte("Logged out")) // Send logout confirmation
