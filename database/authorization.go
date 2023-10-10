@@ -44,19 +44,19 @@ func (auth authHandler) makeToken() string {
 
 // Struct to hold token information
 type TokenInfo struct {
-	Username string
+	Username string `json:"name"`
 	Created  time.Time
 }
 
 // HTTP handler function for authentication
-func (auth authHandler) authFunction(w http.ResponseWriter, r *http.Request) {
+func (auth authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Hey, we made it this far..." + r.Method)
 	switch r.Method {
 	case http.MethodOptions:
 		slog.Info("auth requests options")
 		// For the /auth endpoint, indicate that POST and DELETE are allowed.
 		auth.authPost(w, r)
-		slog.Info("auth requests options")
+		slog.Info("auth finished options")
 	case http.MethodPost: // Handle POST method for user authentication
 		slog.Info("auth requests post")
 		auth.authPost(w, r)
@@ -98,28 +98,30 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer r.Body.Close()
 	slog.Info("body set" + fmt.Sprint(body))
 
-	var username string
-
-	err2 := json.Unmarshal(body, &username)
+	var thisToken TokenInfo
+	err2 := json.Unmarshal(body, &thisToken)
 	if err2 != nil {
+		slog.Info("unmarshal failed")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
 	slog.Info("Marshaling successful")
 
 	// Get username from the query parameter
-	if username == "" {
+	if thisToken.Username == "" {
 		http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
 		return
 	}
 
-	slog.Info("username successful" + username)
+	slog.Info("username successful" + thisToken.Username)
 
 	// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
-	token := auth.makeToken()                                                   // Generate a new token
-	auth.tokenStore[token] = TokenInfo{Username: username, Created: time.Now()} // Store the token and other info
+	token := auth.makeToken() // Generate a new token
+	thisToken.Created = time.Now()
+	auth.tokenStore[token] = thisToken // Store the token and other info
 
 	// Respond with the generated token
 	response := marshalToken(token)
