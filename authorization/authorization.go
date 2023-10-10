@@ -54,15 +54,13 @@ func newTokenInfo() TokenInfo {
 
 // HTTP handler function for authentication
 func (auth *authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		auth.authOptions(w, r)
+	}
 	slog.Info("Auth Method Called" + r.Method)
 	slog.Info("Path" + r.URL.Path)
 	logHeader(r)
 	switch r.Method {
-	case http.MethodOptions:
-		slog.Info("auth requests options")
-		// For the /auth endpoint, indicate that POST and DELETE are allowed.
-		auth.authOptions(w, r)
-		slog.Info("auth finished options")
 	case http.MethodPost: // Handle POST method for user authentication
 		slog.Info("auth requests post")
 		auth.authPost(w, r)
@@ -75,6 +73,7 @@ func (auth *authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
 }
 
 func (auth *authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +84,6 @@ func (auth *authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE")
 	w.WriteHeader(http.StatusOK)
 	slog.Info("Auth options header written")
-	w.Write([]byte("Options: Post, Delete"))
 }
 
 type userStore struct {
