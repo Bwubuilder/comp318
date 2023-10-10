@@ -7,10 +7,11 @@ import (
 )
 
 type jsonVisitor struct {
+	id identity
 }
 
 func New() jsonVisitor {
-	return jsonVisitor{}
+	return jsonVisitor{id: NewID()}
 }
 
 // Process JSON Map by iterating through map and calling Accept
@@ -25,12 +26,14 @@ func (v jsonVisitor) Map(m map[string]any) (any, error) {
 		slog.Info("Created Key: ", key, "Created Value: ", res)
 		returnMap[key] = res
 	}
+
 	return returnMap, nil
 }
 
 // Process JSON slice by iterating through slice and calling Accept
 func (v jsonVisitor) Slice(s []any) (any, error) {
-	returnSlice := make([]any, 1, 10)
+	returnSlice := make([]any, 0, 10)
+
 	for i, val := range s {
 		res, err := jsonvisit.Accept(val, v)
 		if err != nil {
@@ -39,48 +42,26 @@ func (v jsonVisitor) Slice(s []any) (any, error) {
 		slog.Info("Created: ", res, "at index: ", i)
 		returnSlice[i] = res
 	}
+
 	return returnSlice, nil
 }
 
 // Process JSON bool by printing bool
 func (v jsonVisitor) Bool(b bool) (any, error) {
-	boolVal, err := jsonvisit.Accept(b, v)
-	if err != nil {
-		slog.Info("Bool Assertion failed")
-		return nil, err
-	} else {
-		if b {
-			return boolVal, nil
-		} else {
-			return boolVal, nil
-		}
-	}
+	return jsonvisit.Accept(b, v.id)
 }
 
 // Process JSON float
 func (v jsonVisitor) Float64(f float64) (any, error) {
-	floatVal, err := jsonvisit.Accept(f, v)
-	if err != nil {
-		slog.Info("Float Assertion failed")
-		return nil, err
-	} else {
-		return floatVal, nil
-	}
+	return jsonvisit.Accept(f, v.id)
 }
 
 // Process JSON string
 func (v jsonVisitor) String(s string) (any, error) {
-	strVal, err := jsonvisit.Accept(s, v)
-	if err != nil {
-		slog.Info("String Assertion failed")
-		return nil, err
-	} else {
-		return strVal, err
-	}
+	return jsonvisit.Accept(s, v.id)
 }
 
 // Process JSON null value
 func (v jsonVisitor) Null() (any, error) {
-	slog.Info("Call to null")
-	return nil, nil
+	return jsonvisit.Accept(nil, v.id)
 }

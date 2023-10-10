@@ -145,6 +145,8 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
+	slog.Info("JSONToGo Succeeded", user2)
+
 	// Get username from the query parameter
 	if user == "" {
 		slog.Info("No username")
@@ -158,12 +160,13 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	token := auth.makeToken() // Generate a new token
 
 	thisToken := newTokenInfo()
-	thisToken.Username = "StoredUser"
+	thisToken.Username = user
 	auth.tokenStore[token] = thisToken // Store the token and other info
-
+	print(user2)
 	// Respond with the generated token
 	response := marshalToken(token)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }
 
