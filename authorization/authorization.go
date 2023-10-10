@@ -62,19 +62,16 @@ func (auth *authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Requ
 	case http.MethodOptions:
 		slog.Info("auth requests options")
 		// For the /auth endpoint, indicate that POST and DELETE are allowed.
-		auth.authPost(w, r)
+		auth.authOptions(w, r)
 		slog.Info("auth finished options")
-		return
 	case http.MethodPost: // Handle POST method for user authentication
 		slog.Info("auth requests post")
 		auth.authPost(w, r)
 		slog.Info("auth finished post")
-		return
 	case http.MethodDelete: // Handle DELETE method for user de-authentication
 		slog.Info("auth requests delete")
 		auth.authDelete(w, r)
 		slog.Info("auth finished delete")
-		return
 	default: // Handle unsupported HTTP methods
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
