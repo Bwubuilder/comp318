@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"math/rand"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -16,22 +15,21 @@ import (
 var seed = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type authHandler struct {
-	mu         sync.Mutex
 	strlen     int
 	charset    string
 	tokenStore map[string]TokenInfo
 }
 
-func NewAuth() *authHandler {
+func NewAuth() authHandler {
 	var a authHandler
 	a.strlen = 15
 	a.charset = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789"
 	a.tokenStore = make(map[string]TokenInfo) // map token to TokenInfo struct (username + time)
-	return &a
+	return a
 }
 
 // Function to generate a random token
-func (auth *authHandler) makeToken() string {
+func (auth authHandler) makeToken() string {
 	token := make([]byte, auth.strlen) // Initialize a byte array to hold the token
 	for i := range token {
 		token[i] = auth.charset[seed.Intn(len(auth.charset))] // Populate token with random characters from charset
@@ -53,44 +51,44 @@ func newTokenInfo() TokenInfo {
 }
 
 // HTTP handler function for authentication
-func (auth *authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Request) {
+func (auth authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Auth Method Called" + r.Method)
 	slog.Info("Path" + r.URL.Path)
 	logHeader(r)
-	if r.Method == http.MethodOptions {
-		auth.authOptions(w, r)
-	}
-	switch r.Header.Get("Access-Control-Request-Method-Value") {
+
+	switch r.Method {
 	case http.MethodPost: // Handle POST method for user authentication
-		slog.Info("auth requests post")
+		slog.Info("post request at /auth")
 		auth.authPost(w, r)
-		slog.Info("auth finished post")
+		slog.Info("post finished")
 	case http.MethodDelete: // Handle DELETE method for user de-authentication
-		slog.Info("auth requests delete")
+		slog.Info("delete request at /auth")
 		auth.authDelete(w, r)
-		slog.Info("auth finished delete")
+		slog.Info("delete finished")
+	case http.MethodOptions:
+		slog.Info("auth requests options")
+		auth.authOptions(w, r)
+		slog.Info("options finished")
 	default: // Handle unsupported HTTP methods
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
 }
 
-func (auth *authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
-	auth.mu.Lock()
-	defer auth.mu.Unlock()
+func (auth authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Allow", "POST,DELETE")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE")
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	slog.Info("Auth options header written")
+	w.WriteHeader(http.StatusOK)
 }
 
 type userStore struct {
 	username string
 }
 
-func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
+func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	//Detect if content-type is application/json
 	if r.Header.Get("Content-Type") != "" {
 		content := r.Header.Get("Content-Type")
@@ -98,11 +96,13 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Content header not JSON", http.StatusUnsupportedMediaType)
 			return
 		}
+	} else {
+		slog.Info("Header contains no content type")
+		return
 	}
 
 	slog.Info("Making it further...")
-	auth.mu.Lock()
-	defer auth.mu.Unlock()
+
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -146,7 +146,7 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (auth *authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
+func (auth authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
 	// Get token from the Authorization header
 	if token == "" {
@@ -164,8 +164,7 @@ func (auth *authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid token", http.StatusUnauthorized) // Return an error for invalid token
 		return
 	}
-	auth.mu.Lock()
-	defer auth.mu.Unlock()
+
 	delete(auth.tokenStore, token) // Delete token if all checks pass
 
 	w.Write([]byte("Logged out")) // Send logout confirmation
