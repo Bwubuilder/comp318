@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Bwubuilder/owldb/jsonvisitor/jsonstringer"
+	"github.com/Bwubuilder/owldb/jsonvisitor/jsontogo"
 	"github.com/Bwubuilder/owldb/jsonvisitor/jsonvisit"
 )
 
@@ -128,7 +128,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Unmarshaled successfully")
 
-	printer := jsonstringer.New()
+	printer := jsontogo.New()
 	user, err3 := jsonvisit.Accept(d, printer)
 	if err3 != nil {
 		slog.Info("JSONVisitor Failed")
@@ -144,7 +144,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("username successful" + user)
+	slog.Info("username successful", user)
 
 	// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
 	token := auth.makeToken() // Generate a new token
