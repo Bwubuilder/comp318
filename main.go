@@ -19,20 +19,19 @@ func main() {
 	var server http.Server
 	var port int
 	var err error
-	var schemaName string
-	var tokenFile string
 
 	// Your code goes here.
 
 	// Set port as defined at -p, with default port 3318
 	portPtr := flag.Int("p", 3318, "port on which the server will listen")
-	flag.StringVar(&schemaName, "s", "", "JSON Schema File")
-	flag.StringVar(&tokenFile, "s", "", "JSON Token File")
+	schemaPtr := flag.String("s", "", "schema file")
+	tokenPtr := flag.String("t", "token.json", "token file")
 	flag.Parse()
 
 	port = *portPtr
 	// Accept -s and -t flags but ignore them for now
-
+	_ = schemaPtr
+	_ = tokenPtr
 	// Set server address based on port
 	server.Addr = ":" + fmt.Sprintf("%d", port)
 
