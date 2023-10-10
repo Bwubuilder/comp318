@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Bwubuilder/owldb/jsonvisitor/jsonstringer"
 	"github.com/Bwubuilder/owldb/jsonvisitor/jsontogo"
 	"github.com/Bwubuilder/owldb/jsonvisitor/jsonvisit"
 )
@@ -128,7 +129,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Unmarshaled successfully")
 
-	printer := jsontogo.New()
+	printer := jsonstringer.New()
 	user, err3 := jsonvisit.Accept(d, printer)
 	if err3 != nil {
 		slog.Info("JSONVisitor Failed")
@@ -136,6 +137,13 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("JSONVisit Succeeded", user)
+
+	converter := jsontogo.New()
+	user2, err4 := jsonvisit.Accept(d, converter)
+	if err4 != nil {
+		slog.Info("JSONToGo Failed")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
 
 	// Get username from the query parameter
 	if user == "" {

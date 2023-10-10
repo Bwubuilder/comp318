@@ -1,7 +1,6 @@
 package jsontogo
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/Bwubuilder/owldb/jsonvisitor/jsonvisit"
@@ -16,7 +15,7 @@ func New() jsonVisitor {
 
 // Process JSON Map by iterating through map and calling Accept
 func (v jsonVisitor) Map(m map[string]any) (any, error) {
-	var returnMap map[string]any
+	returnMap := make(map[string]any)
 
 	for key, val := range m {
 		res, err := jsonvisit.Accept(val, v)
@@ -31,7 +30,7 @@ func (v jsonVisitor) Map(m map[string]any) (any, error) {
 
 // Process JSON slice by iterating through slice and calling Accept
 func (v jsonVisitor) Slice(s []any) (any, error) {
-	var returnSlice []any
+	returnSlice := make([]any, 1, 10)
 	for i, val := range s {
 		res, err := jsonvisit.Accept(val, v)
 		if err != nil {
@@ -45,21 +44,39 @@ func (v jsonVisitor) Slice(s []any) (any, error) {
 
 // Process JSON bool by printing bool
 func (v jsonVisitor) Bool(b bool) (any, error) {
-	if b {
-		return true, nil
+	boolVal, err := jsonvisit.Accept(b, v)
+	if err != nil {
+		slog.Info("Bool Assertion failed")
+		return nil, err
 	} else {
-		return false, nil
+		if b {
+			return boolVal, nil
+		} else {
+			return boolVal, nil
+		}
 	}
 }
 
 // Process JSON float
 func (v jsonVisitor) Float64(f float64) (any, error) {
-	return f, nil
+	floatVal, err := jsonvisit.Accept(f, v)
+	if err != nil {
+		slog.Info("Float Assertion failed")
+		return nil, err
+	} else {
+		return floatVal, nil
+	}
 }
 
 // Process JSON string
 func (v jsonVisitor) String(s string) (any, error) {
-	return fmt.Sprintf("\"%s\"", s), nil
+	strVal, err := jsonvisit.Accept(s, v)
+	if err != nil {
+		slog.Info("String Assertion failed")
+		return nil, err
+	} else {
+		return strVal, err
+	}
 }
 
 // Process JSON null value
