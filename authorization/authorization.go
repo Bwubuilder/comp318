@@ -16,21 +16,18 @@ import (
 var seed = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type authHandler struct {
-	mu         *sync.Mutex
+	mu         sync.Mutex
 	strlen     int
 	charset    string
 	tokenStore map[string]TokenInfo
 }
 
-func NewAuth() authHandler {
+func NewAuth() *authHandler {
 	var a authHandler
-	// Define constants for token length and character set
 	a.strlen = 15
 	a.charset = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789"
-	// Map to store token information
 	a.tokenStore = make(map[string]TokenInfo) // map token to TokenInfo struct (username + time)
-	slog.Info("auth created")
-	return a
+	return &a
 }
 
 // Function to generate a random token
