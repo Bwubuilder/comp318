@@ -82,6 +82,7 @@ func (auth authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE")
 	w.WriteHeader(http.StatusOK)
+	slog.Info("Auth options header written")
 }
 
 func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
@@ -95,10 +96,10 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("body set" + fmt.Sprint(body))
+	slog.Info("body set" + fmt.Sprint(len(body)))
 
 	thisToken := newTokenInfo()
-	err2 := json.Unmarshal(body, &thisToken)
+	err2 := json.Unmarshal([]byte(body), &thisToken)
 	if err2 != nil {
 		slog.Info("unmarshal failed")
 		http.Error(w, err.Error(), http.StatusBadRequest)
