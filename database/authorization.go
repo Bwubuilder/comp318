@@ -151,6 +151,7 @@ func (auth *authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Packs the token up to be sent back to the user.
 func marshalToken(token string) []byte {
 	tokenVal := map[string]string{"token": token}
 
@@ -160,6 +161,20 @@ func marshalToken(token string) []byte {
 		return nil
 	}
 	return response
+}
+
+func (auth authHandler) checkToken(token string) bool {
+	//Checks that token has a value
+	if token == "" {
+		return false
+	}
+
+	//Checks that token has a value in store
+	if auth.tokenStore[token] == "" {
+		return false
+	}
+
+	return true
 }
 
 func (auth *authHandler) handleTokenFile(path string) {

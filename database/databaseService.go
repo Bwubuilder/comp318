@@ -52,7 +52,7 @@ func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ds.checkValidToken(r) != true {
+	if ds.auth.checkToken(r.Header.Get("Authorization")) != true {
 		w.Header().Add("WWW-Authenticate", "Bearer")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -465,24 +465,4 @@ func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization")
 	w.WriteHeader(http.StatusOK)
-}
-
-func (ds *DatabaseService) checkValidToken(r *http.Request) bool {
-	slog.Info("checking token")
-	if r.Header.Get("Authorization") == "" {
-		slog.Info("No authorization ")
-		return false
-	}
-	token := r.Header.Get("Authorization")[7:]
-
-	slog.Info("Auth Header Exists")
-
-	if ds.auth.tokenStore[token] == "" {
-		slog.Info("No token found")
-		return false
-	}
-
-	slog.Info("TokenCheck true")
-
-	return true
 }
