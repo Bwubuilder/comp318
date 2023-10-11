@@ -134,22 +134,13 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 func (auth *authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 	// Get token from the Authorization header
 	token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
-	if token == "" {
-		http.Error(w, "Token is required", http.StatusBadRequest) // Return error if token is missing
-		return
-	}
-	if info, exists := auth.tokenStore[token]; exists { // Check if token exists
-		delete(auth.tokenStore, info)
-	} else {
-		http.Error(w, "Invalid token", http.StatusUnauthorized) // Return an error for invalid token
-		return
-	}
-
+	delete(auth.tokenStore, token)
+	slog.Info(auth.tokenStore[token])
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func marshalToken(token string) []byte {
-	slog.Info("We made it this far!")
 	tokenVal := map[string]string{"token": token}
 
 	response, err := json.MarshalIndent(tokenVal, "", "  ")
