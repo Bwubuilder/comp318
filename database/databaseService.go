@@ -51,12 +51,14 @@ func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
 		ds.HandleOptions(w, r)
 		return
 	}
+
 	if ds.checkValidToken(r) != true {
 		w.Header().Add("WWW-Authenticate", "Bearer")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
 	switch r.Method {
 	case http.MethodGet:
 		ds.HandleGet(w, r)
@@ -135,6 +137,22 @@ func (ds *DatabaseService) HandlePut(w http.ResponseWriter, r *http.Request) {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
+	if len(pathParts) == 1 {
+		slog.Info("PUT case database")
+		dbName := pathParts[0]
+		newCollection := NewCollection(dbName)
+		ds.collections.Upsert(dbName, SetOrUpdate)
+		response, _ := newCollection.Marshal()
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		slog.Info("Database Created")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(response)
+		return
+	}
+
+	slog.Info("PUT case Collection")
+
 	var currentItem PathItem
 	collection, exists := ds.collections.Find(pathParts[0])
 	if !exists {
@@ -160,14 +178,17 @@ func (ds *DatabaseService) HandlePut(w http.ResponseWriter, r *http.Request) {
 
 	// Handle the final item in the path
 	if len(pathParts)%2 == 0 { // Collection
+		slog.Info("PUT case Collection")
 		collectionName := pathParts[len(pathParts)-1]
 		newCollection := NewCollection(collectionName)
 		currentItem.(*Document).Collections.Upsert(collectionName, SetOrUpdate)
 		response, _ := newCollection.Marshal()
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusCreated)
 		w.Write(response)
 	} else { // Odd length, so it's a document
+		slog.Info("PUT case Document")
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
