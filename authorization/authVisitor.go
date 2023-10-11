@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/comp318/tutorials/json/visitor/jsonvisit"
+	"github.com/Bwubuilder/owldb/jsonvisitor/jsonvisit"
 )
 
 type authVisitor struct {
