@@ -26,7 +26,9 @@ type UserFormat struct {
 }
 
 func NewAuth() *authHandler {
-	return new(authHandler)
+	a := new(authHandler)
+	a.tokenStore = make(map[string]string)
+	return a
 }
 
 // Function to generate a random token
