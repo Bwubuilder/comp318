@@ -45,7 +45,7 @@ func NewDatabaseService() *DatabaseService {
 }
 
 func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
-	slog.Info("\n\n" + r.Method + r.URL.Path + "\n\n")
+	slog.Info("\n\n", r.Method, r.URL.Path+"\n\n")
 	logHeader(r)
 	if r.Method == http.MethodOptions {
 		ds.HandleOptions(w, r)

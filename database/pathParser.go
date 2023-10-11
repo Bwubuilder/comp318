@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"log/slog"
 	"net/url"
 	"strings"
 )
@@ -16,11 +15,8 @@ type PathItem interface {
 
 // SplitPath splits the given path into its components.
 func splitPath(path string) ([]string, error) {
-	slog.Info(path)
 	// Remove leading and trailing slashes if they exist.
 	trimmedPath := strings.Trim(path, "/")
-
-	slog.Info(trimmedPath)
 
 	// Split the path by slashes.
 	parts := strings.Split(trimmedPath, "/")
