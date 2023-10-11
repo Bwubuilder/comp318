@@ -4,52 +4,42 @@ package authorization
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"math/rand"
 	"net/http"
 	"time"
 
-	"github.com/Bwubuilder/owldb/jsonvisitor/jsonvisit"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
 // Initialize a random number generator with a time-based seed
 var seed = rand.New(rand.NewSource(time.Now().UnixNano()))
 
+const charset = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789"
+const tokenLen = 15
+
 type authHandler struct {
-	strlen     int
-	charset    string
-	tokenStore map[string]TokenInfo
+	tokenStore map[string]string
 }
 
-func NewAuth() authHandler {
-	var a authHandler
-	a.strlen = 15
-	a.charset = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789"
-	a.tokenStore = make(map[string]TokenInfo) // map token to TokenInfo struct (username + time)
-	return a
+type userFormat struct {
+	username string
+}
+
+func NewAuth() *authHandler {
+	return new(authHandler)
 }
 
 // Function to generate a random token
 func (auth authHandler) makeToken() string {
-	token := make([]byte, auth.strlen) // Initialize a byte array to hold the token
+	token := make([]byte, tokenLen) // Initialize a byte array to hold the token
 	for i := range token {
-		token[i] = auth.charset[seed.Intn(len(auth.charset))] // Populate token with random characters from charset
+		token[i] = charset[seed.Intn(len(charset))] // Populate token with random characters from charset
 	}
 	slog.Info("Token made" + string(token))
 	return string(token) // Convert byte array to string and return
-}
-
-// Struct to hold token information
-type TokenInfo struct {
-	Username string
-	Created  time.Time
-}
-
-func newTokenInfo() TokenInfo {
-	var info TokenInfo
-	info.Created = time.Now()
-	return info
 }
 
 // HTTP handler function for authentication
@@ -99,7 +89,15 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("Making it further...")
+	// Create a JSON Schema compiler
+	compiler := jsonschema.NewCompiler()
+
+	// Compile JSON schema
+	sch, err := compiler.Compile("/schemas/user")
+	if err != nil {
+		slog.Error("schema compilation error", "error", err)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -107,19 +105,12 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `"invalid user format"`, http.StatusBadRequest)
 		return
 	}
-
-	if len(body) == 0 {
-		slog.Info("Body empty")
-		http.Error(w, "Body of Request is empty", http.StatusBadRequest)
-		return
-	}
-
-	slog.Info("read body", len(body))
+	slog.Info("Read Body succeeded")
 	r.Body.Close()
 
-	var d any
-	err2 := json.Unmarshal(body, &d)
-	if err2 != nil {
+	var d userFormat
+	err = json.Unmarshal(body, &d)
+	if err != nil {
 		slog.Info("decode failed")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -127,59 +118,49 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Unmarshaled successfully")
 
-	converter := New()
-	user, err4 := jsonvisit.Accept(d, converter)
-	if err4 != nil {
-		slog.Info("JSONToGo Failed")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Validate the JSON data against the compiled schema
+	if err := sch.Validate(d); err != nil {
+		msg := fmt.Sprintf("%#v", err)
+		slog.Error("data does not conform to the schema", "error", msg)
+		return
 	}
 
-	slog.Info("JSONToGo Succeeded", user)
-	if user == "" {
+	slog.Info("Successfully Validated username")
+
+	if d.username == "" {
 		slog.Info("No username")
 		http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
 		return
 	}
 
-	slog.Info("username successful", user)
+	slog.Info("Username exists")
 
 	// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
 	token := auth.makeToken() // Generate a new token
 
-	thisToken := newTokenInfo()
-	thisToken.Username = user
-	auth.tokenStore[token] = thisToken // Store the token and other info
+	auth.tokenStore[token] = d.username // Store the token and other info
 	// Respond with the generated token
 	response := marshalToken(token)
+
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Authorization", "Bearer "+token)
-	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }
 
 func (auth authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
 	// Get token from the Authorization header
+	token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
 	if token == "" {
 		http.Error(w, "Token is required", http.StatusBadRequest) // Return error if token is missing
 		return
 	}
 	if info, exists := auth.tokenStore[token]; exists { // Check if token exists
-		if time.Since(info.Created).Hours() >= 1 { // Check token expiration
-			delete(auth.tokenStore, token)                          // Remove expired token
-			http.Error(w, "Token expired", http.StatusUnauthorized) // Return an expiration error
-
-			return
-		}
+		delete(auth.tokenStore, info)
 	} else {
 		http.Error(w, "Invalid token", http.StatusUnauthorized) // Return an error for invalid token
 		return
 	}
 
-	delete(auth.tokenStore, token) // Delete token if all checks pass
-
-	w.Write([]byte("Logged out")) // Send logout confirmation
-	return
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func marshalToken(token string) []byte {
