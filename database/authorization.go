@@ -163,7 +163,7 @@ func marshalToken(token string) []byte {
 	return response
 }
 
-func (auth authHandler) checkToken(token string) bool {
+func (auth *authHandler) checkToken(token string) bool {
 	//Checks that token has a value
 	if token == "" {
 		return false
