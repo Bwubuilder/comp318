@@ -1,6 +1,6 @@
 // Or should userList map username to UserStruct then store all the user + token info in UserStruct?
 
-package authorization
+package database
 
 import (
 	"encoding/json"
@@ -32,12 +32,6 @@ func NewAuth() *authHandler {
 	return a
 }
 
-func check(err error, operation string) {
-	if err != nil {
-
-	}
-}
-
 // Function to generate a random token
 func (auth authHandler) makeToken() string {
 	token := make([]byte, tokenLen) // Initialize a byte array to hold the token
@@ -49,7 +43,7 @@ func (auth authHandler) makeToken() string {
 }
 
 // HTTP handler function for authentication
-func (auth authHandler) HandleAuthFunctions(w http.ResponseWriter, r *http.Request) {
+func (auth authHandler) handleAuthFunctions(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Auth Method Called ", r.Method)
 	slog.Info("Path ", r.URL.Path)
 	logHeader(r)
@@ -127,6 +121,7 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	time.AfterFunc(1*time.Hour, func() { delete(auth.tokenStore, token) })
 
 	auth.tokenStore[token] = d.Username // Store the token and other info
+	slog.Info(auth.tokenStore[token])
 	// Respond with the generated token
 	response := marshalToken(token)
 
@@ -182,13 +177,6 @@ func (auth *authHandler) handleTokenFile(path string) {
 	for user, token := range tokens {
 		auth.tokenStore[token] = user
 	}
-}
-
-func (auth authHandler) checkToken(userToken string) bool {
-	if auth.tokenStore[userToken] == "" {
-		return false
-	}
-	return true
 }
 
 func logHeader(r *http.Request) {

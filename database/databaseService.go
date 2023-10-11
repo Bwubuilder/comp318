@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -16,7 +17,19 @@ import (
 // It contains a method to address each of the HTTP methods.
 type DatabaseService struct {
 	mu          sync.Mutex
+	auth        *authHandler
 	collections skiplist.SkipList[string, Collection]
+}
+
+func New() http.Handler {
+	ds := NewDatabaseService()
+	auth := NewAuth()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/auth", auth.handleAuthFunctions)
+	mux.HandleFunc("/", ds.dbMethods)
+
+	return mux
 }
 
 // Placeholder dummy function for skipList implementation
@@ -26,8 +39,33 @@ func SetOrUpdate[K cmp.Ordered, V any](key K, currValue V, exists bool) (newValu
 
 // NewDatabaseService creates and returns a new DatabaseService struct.
 func NewDatabaseService() *DatabaseService {
-	return &DatabaseService{
-		collections: skiplist.NewSkipList[string, Collection](),
+	var ds DatabaseService
+	ds.collections = skiplist.NewSkipList[string, Collection]()
+	return &ds
+}
+
+func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		ds.HandleOptions(w, r)
+	}
+	if ds.checkValidToken(r) != true {
+		w.Header().Add("WWW-Authenticate", "Bearer")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		ds.HandleGet(w, r)
+	case http.MethodPut:
+		ds.HandlePut(w, r)
+	case http.MethodPost:
+		ds.HandlePost(w, r)
+	case http.MethodPatch:
+		ds.HandlePatch(w, r)
+	case http.MethodDelete:
+		ds.HandleDelete(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -382,4 +420,19 @@ func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Allow", allowedMethods)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (ds *DatabaseService) checkValidToken(r *http.Request) bool {
+	if r.Header.Get("Authorization") == "" {
+		slog.Info("No authorization ")
+		return false
+	}
+	token := r.Header.Get("Authorization")[7:]
+
+	if ds.auth.tokenStore[token] == "" {
+		slog.Info("No token found")
+		return false
+	}
+
+	return true
 }
