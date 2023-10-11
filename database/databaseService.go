@@ -3,6 +3,7 @@ package database
 import (
 	"cmp"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -368,6 +369,9 @@ func (ds *DatabaseService) HandleDelete(w http.ResponseWriter, r *http.Request) 
 
 func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request) {
 	pathParts, err := splitPath(r.URL.Path)
+
+	fmt.Printf("%v", pathParts)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
