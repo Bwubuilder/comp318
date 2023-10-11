@@ -132,11 +132,22 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (auth *authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+
+	if r.Header.Get("Authorization") == "" {
+		w.Header().Add("WWW-Authenticate", "Bearer")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	token := r.Header.Get("Authorization")[7:]
+
+	if auth.tokenStore[token] == "" {
+		http.Error(w, "No token", http.StatusUnauthorized)
+	}
 	// Get token from the Authorization header
-	token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
 	delete(auth.tokenStore, token)
 	slog.Info(auth.tokenStore[token])
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -45,6 +45,7 @@ func NewDatabaseService() *DatabaseService {
 }
 
 func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
+	logHeader(r)
 	if r.Method == http.MethodOptions {
 		ds.HandleOptions(w, r)
 	}
