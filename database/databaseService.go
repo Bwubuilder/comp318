@@ -381,6 +381,7 @@ func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request)
 		w.Header().Set("Allow", "PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Methods", "PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Authentication")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -435,6 +436,7 @@ func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Allow", allowedMethods)
 	w.Header().Set("Access-Control-Allow-Methods", allowedMethods)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Authentication")
 	w.WriteHeader(http.StatusOK)
 }
 
