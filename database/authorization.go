@@ -164,17 +164,14 @@ func marshalToken(token string) []byte {
 }
 
 func (auth *authHandler) checkToken(token string) bool {
-	//Checks that token has a value
-	if token == "" {
-		return false
+	for k, v := range auth.tokenStore {
+		if token == k {
+			if v != "" {
+				return true
+			}
+		}
 	}
-
-	//Checks that token has a value in store
-	if auth.tokenStore[token] == "" {
-		return false
-	}
-
-	return true
+	return false
 }
 
 func (auth *authHandler) handleTokenFile(path string) {
