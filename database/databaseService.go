@@ -475,10 +475,14 @@ func (ds *DatabaseService) checkValidToken(r *http.Request) bool {
 	}
 	token := r.Header.Get("Authorization")[7:]
 
+	slog.Info("Auth Header Exists")
+
 	if ds.auth.tokenStore[token] == "" {
 		slog.Info("No token found")
 		return false
 	}
+
+	slog.Info("TokenCheck true")
 
 	return true
 }
