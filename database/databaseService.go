@@ -51,6 +51,7 @@ func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
 	}
 	if ds.checkValidToken(r) != true {
 		w.Header().Add("WWW-Authenticate", "Bearer")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
