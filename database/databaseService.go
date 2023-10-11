@@ -59,16 +59,22 @@ func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Info("checking token succeeded")
+
 	switch r.Method {
 	case http.MethodGet:
 		ds.HandleGet(w, r)
 	case http.MethodPut:
+		slog.Info("PUT called on db")
 		ds.HandlePut(w, r)
 	case http.MethodPost:
+		slog.Info("POST called on db")
 		ds.HandlePost(w, r)
 	case http.MethodPatch:
+		slog.Info("PATCH called on db")
 		ds.HandlePatch(w, r)
 	case http.MethodDelete:
+		slog.Info("DELETE called on db")
 		ds.HandleDelete(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -462,6 +468,7 @@ func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request)
 }
 
 func (ds *DatabaseService) checkValidToken(r *http.Request) bool {
+	slog.Info("checking token")
 	if r.Header.Get("Authorization") == "" {
 		slog.Info("No authorization ")
 		return false
