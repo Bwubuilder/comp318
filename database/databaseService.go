@@ -110,15 +110,16 @@ func (ds *DatabaseService) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
-
 	if r.URL.Query().Get("mode") == "subscribe" {
 		subInst := NewSubHandler()
 		http.Handle(r.URL.Path, subInst)
 		http.HandleFunc(r.URL.Path, subInst.MessageHandler)
 
 	}
+
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(http.StatusOK)
+	w.Write(response)
 }
 
 func (ds *DatabaseService) HandlePut(w http.ResponseWriter, r *http.Request) {
@@ -176,6 +177,7 @@ func (ds *DatabaseService) HandlePut(w http.ResponseWriter, r *http.Request) {
 		currentItem.(*Collection).Documents.Upsert(docName, SetOrUpdate)
 		response, _ := doc.Marshal()
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusCreated)
 		w.Write(response)
 	}
@@ -231,7 +233,7 @@ func (ds *DatabaseService) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 		currentItem.(*Collection).Documents.Upsert(docName, SetOrUpdate)
 	}
-
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -300,7 +302,7 @@ func (ds *DatabaseService) HandlePatch(w http.ResponseWriter, r *http.Request) {
 		target.Data = updatedDoc.Data
 		target.URI = updatedDoc.URI
 	}
-
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Item updated successfully"))
 }
@@ -356,7 +358,7 @@ func (ds *DatabaseService) HandleDelete(w http.ResponseWriter, r *http.Request) 
 		}
 		currentItem.(*Collection).Documents.Remove(docName)
 	}
-
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Item deleted successfully"))
 }
@@ -418,7 +420,7 @@ func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request)
 			allowedMethods += ", POST, PUT"
 		}
 	}
-
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Allow", allowedMethods)
 	w.WriteHeader(http.StatusOK)
 }
