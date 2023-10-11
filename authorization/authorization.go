@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -29,6 +30,12 @@ func NewAuth() *authHandler {
 	a := new(authHandler)
 	a.tokenStore = make(map[string]string)
 	return a
+}
+
+func check(err error, operation string) {
+	if err != nil {
+
+	}
 }
 
 // Function to generate a random token
@@ -117,6 +124,7 @@ func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 
 	// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
 	token := auth.makeToken() // Generate a new token
+	time.AfterFunc(1*time.Hour, func() { delete(auth.tokenStore, token) })
 
 	auth.tokenStore[token] = d.Username // Store the token and other info
 	// Respond with the generated token
@@ -155,6 +163,32 @@ func marshalToken(token string) []byte {
 		return nil
 	}
 	return response
+}
+
+func (auth *authHandler) handleTokenFile(path string) {
+	dat, err := os.ReadFile(path)
+	if err != nil {
+		slog.Info("Token file could not be read")
+		return
+	}
+
+	var tokens map[string]string
+	err = json.Unmarshal(dat, &tokens)
+	if err != nil {
+		slog.Info("Unmarshal Failed")
+		return
+	}
+
+	for user, token := range tokens {
+		auth.tokenStore[token] = user
+	}
+}
+
+func (auth authHandler) checkToken(userToken string) bool {
+	if auth.tokenStore[userToken] == "" {
+		return false
+	}
+	return true
 }
 
 func logHeader(r *http.Request) {
