@@ -24,7 +24,7 @@ type authHandler struct {
 	tokenStore map[string]string
 }
 
-type userFormat struct {
+type UserFormat struct {
 	Username string
 }
 
@@ -108,7 +108,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Read Body succeeded")
 	r.Body.Close()
 
-	var d userFormat
+	var d UserFormat
 	err = json.Unmarshal(body, &d)
 	if err != nil {
 		slog.Info("decode failed")
