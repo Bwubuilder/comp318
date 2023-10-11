@@ -93,7 +93,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	compiler := jsonschema.NewCompiler()
 
 	// Compile JSON schema
-	sch, err := compiler.Compile("/schemas/user")
+	sch, err := compiler.Compile("github.com/Bwubuilder/owldb/main/schemas/user.json")
 	if err != nil {
 		slog.Error("schema compilation error", "error", err)
 		return
