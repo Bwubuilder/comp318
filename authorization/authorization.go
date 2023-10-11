@@ -4,14 +4,11 @@ package authorization
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"math/rand"
 	"net/http"
 	"time"
-
-	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
 // Initialize a random number generator with a time-based seed
@@ -89,16 +86,6 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a JSON Schema compiler
-	compiler := jsonschema.NewCompiler()
-
-	// Compile JSON schema
-	sch, err := compiler.Compile("schemas/user.json")
-	if err != nil {
-		slog.Error("schema compilation error", "error", err)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		slog.Info("Body could not be read")
@@ -117,15 +104,6 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("Unmarshaled successfully")
-
-	// Validate the JSON data against the compiled schema
-	if err := sch.Validate(d); err != nil {
-		msg := fmt.Sprintf("%#v", err)
-		slog.Error("data does not conform to the schema", "error", msg)
-		return
-	}
-
-	slog.Info("Successfully Validated username")
 
 	if d.Username == "" {
 		slog.Info("No username")
