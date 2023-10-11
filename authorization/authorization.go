@@ -73,7 +73,7 @@ func (auth authHandler) authOptions(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
+func (auth *authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	//Detect if content-type is application/json
 	if r.Header.Get("Content-Type") != "" {
 		content := r.Header.Get("Content-Type")
@@ -124,7 +124,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (auth authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
+func (auth *authHandler) authDelete(w http.ResponseWriter, r *http.Request) {
 	// Get token from the Authorization header
 	token := r.Header.Get("Authorization")[7:] // to get the token after "Bearer "
 	if token == "" {
