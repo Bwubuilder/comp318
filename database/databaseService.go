@@ -49,6 +49,7 @@ func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
 	logHeader(r)
 	if r.Method == http.MethodOptions {
 		ds.HandleOptions(w, r)
+		return
 	}
 	if ds.checkValidToken(r) != true {
 		w.Header().Add("WWW-Authenticate", "Bearer")
@@ -422,8 +423,9 @@ func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request)
 			allowedMethods += ", POST, PUT"
 		}
 	}
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Allow", allowedMethods)
+	w.Header().Set("Access-Control-Allow-Methods", allowedMethods)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 }
 
