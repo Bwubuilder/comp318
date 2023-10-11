@@ -25,7 +25,7 @@ type authHandler struct {
 }
 
 type userFormat struct {
-	username string
+	Username string
 }
 
 func NewAuth() *authHandler {
@@ -127,7 +127,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Successfully Validated username")
 
-	if d.username == "" {
+	if d.Username == "" {
 		slog.Info("No username")
 		http.Error(w, "Username is required", http.StatusBadRequest) // Return error if username is missing
 		return
@@ -138,7 +138,7 @@ func (auth authHandler) authPost(w http.ResponseWriter, r *http.Request) {
 	// ALSO NEED TO CHECK if user exists in the database here? or are all names valid?
 	token := auth.makeToken() // Generate a new token
 
-	auth.tokenStore[token] = d.username // Store the token and other info
+	auth.tokenStore[token] = d.Username // Store the token and other info
 	// Respond with the generated token
 	response := marshalToken(token)
 
