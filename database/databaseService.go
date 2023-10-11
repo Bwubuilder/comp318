@@ -3,7 +3,6 @@ package database
 import (
 	"cmp"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -370,8 +369,6 @@ func (ds *DatabaseService) HandleDelete(w http.ResponseWriter, r *http.Request) 
 func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request) {
 	pathParts, err := splitPath(r.URL.Path)
 
-	fmt.Printf("%v", pathParts)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -379,6 +376,14 @@ func (ds *DatabaseService) HandleOptions(w http.ResponseWriter, r *http.Request)
 
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
+
+	if len(pathParts) == 1 {
+		w.Header().Set("Allow", "PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Methods", "PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
 	var currentItem PathItem
 	collection, exists := ds.collections.Find(pathParts[0])
