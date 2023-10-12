@@ -16,11 +16,11 @@ type Collection struct {
 
 // NewCollection creates and returns a new Collection struct with the given name.
 func NewCollection(name string) *Collection {
-	return &Collection{
-		Name:      name,
-		Documents: skiplist.NewSkipList[string, Document](),
-		URI:       name,
-	}
+	var col Collection
+	col.Name = name
+	col.Documents = skiplist.NewSkipList[string, Document]()
+	col.URI = name
+	return &col
 }
 
 // GetChildByName implements the function from the PathItem interface.
@@ -35,7 +35,7 @@ func (c *Collection) GetChildByName(name string) (PathItem, bool) {
 
 // Marshal implements the function from the PathItem interface.
 // Calling Marshal() marshals and returns the collection as well as an error.
-func (c Collection) Marshal() []byte, err {
+func (c Collection) Marshal() ([]byte, error) {
 	colURI := map[string]string{"uri": c.URI}
 
 	response, err := json.MarshalIndent(colURI, "", "  ")
