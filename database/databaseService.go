@@ -64,19 +64,25 @@ func (ds *DatabaseService) dbMethods(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		slog.Info("GET called on database")
 		ds.HandleGet(w, r)
+		slog.Info("GET successful")
 	case http.MethodPut:
 		slog.Info("PUT called on db")
 		ds.HandlePut(w, r)
+		slog.Info("PUT successful")
 	case http.MethodPost:
 		slog.Info("POST called on db")
 		ds.HandlePost(w, r)
+		slog.Info("POST successful")
 	case http.MethodPatch:
 		slog.Info("PATCH called on db")
 		ds.HandlePatch(w, r)
+		slog.Info("PATCH successful")
 	case http.MethodDelete:
 		slog.Info("DELETE called on db")
 		ds.HandleDelete(w, r)
+		slog.Info("DELETE successful")
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -151,7 +157,10 @@ func (ds *DatabaseService) HandlePut(w http.ResponseWriter, r *http.Request) {
 		dbName := pathParts[0]
 		newCollection := NewCollection(dbName)
 		ds.collections.Upsert(dbName, SetOrUpdate)
-		response, _ := newCollection.Marshal()
+		response, err := newCollection.Marshal()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		slog.Info("Database Created")

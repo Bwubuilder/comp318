@@ -1,6 +1,11 @@
 package database
 
-import "github.com/Bwubuilder/owldb/skiplist"
+import (
+	"encoding/json"
+	"log/slog"
+
+	"github.com/Bwubuilder/owldb/skiplist"
+)
 
 // The Collection struct represents a collection in a database.
 type Collection struct {
@@ -30,7 +35,13 @@ func (c *Collection) GetChildByName(name string) (PathItem, bool) {
 
 // Marshal implements the function from the PathItem interface.
 // Calling Marshal() marshals and returns the collection as well as an error.
-func (c *Collection) Marshal() ([]byte, error) {
-	response := make([]byte, 0)
+func (c Collection) Marshal() []byte, err {
+	colURI := map[string]string{"uri": c.URI}
+
+	response, err := json.MarshalIndent(colURI, "", "  ")
+	if err != nil {
+		slog.Info("Collection marshaling failed")
+		return nil, err
+	}
 	return response, nil
 }
