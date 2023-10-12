@@ -164,7 +164,9 @@ func marshalToken(token string) []byte {
 }
 
 func (auth *authHandler) checkToken(token string) bool {
+	slog.Info(token)
 	for k, v := range auth.tokenStore {
+		slog.Info(k, v)
 		if token == k {
 			if v != "" {
 				return true
