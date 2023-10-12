@@ -141,6 +141,8 @@ func (ds *DatabaseService) HandlePut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Info(pathParts[0])
+
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
@@ -151,7 +153,7 @@ func (ds *DatabaseService) HandlePut(w http.ResponseWriter, r *http.Request) {
 		ds.collections.Upsert(dbName, SetOrUpdate)
 		response, _ := newCollection.Marshal()
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Add("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		slog.Info("Database Created")
 		w.WriteHeader(http.StatusCreated)
 		w.Write(response)
