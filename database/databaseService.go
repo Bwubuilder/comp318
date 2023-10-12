@@ -22,8 +22,9 @@ type DatabaseService struct {
 }
 
 func New() http.Handler {
-	ds := NewDatabaseService()
 	auth := NewAuth()
+	ds := NewDatabaseService()
+	ds.auth = auth
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/auth", auth.handleAuthFunctions)
